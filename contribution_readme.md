@@ -2,7 +2,7 @@
 
 **Contribution Number:** 1  
 **Student:** Daria Hrabar  
-**Issue:** https://github.com/meltano/sdk/issues/1198
+**Issue:** https://github.com/meltano/sdk/issues/1198  
 **Status:** Phase I In Progress
 
 ---
