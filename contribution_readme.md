@@ -1,9 +1,9 @@
-# Contribution [#]: [Issue Title]
+# Contribution 1: "feat: Support nested replication keys"
 
-**Contribution Number:** [1 / 2 / 3]  
-**Student:** [Your Name]  
-**Issue:** [GitHub issue link]  
-**Status:** [Phase I / Phase II / Phase III / Phase IV] [In Progress / Complete]
+**Contribution Number:** 1  
+**Student:** Daria Hrabar  
+**Issue:** https://github.com/meltano/sdk/issues/1198 
+**Status:** Phase I In Progress
 
 ---
 
