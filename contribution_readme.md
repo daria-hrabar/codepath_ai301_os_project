@@ -9,7 +9,9 @@
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
+This issue entails implementing support for nested replication keys to track incremental data updates. By enabling the SDK to parse deep JSON paths directly, this update optimizes data pipelines and removes the need for manual data restructuring.
+
+As a developing software engineer, I chose this issue to learn best practices for contributing to open-source projects in a welcoming environment. I am also excited to expand my knowledge of Python, JSON, API, and AI. Lastly, I hope to make a positive impact on the GitHub community by offering a solution that can be integrated into the main codebase.
 
 ---
 
