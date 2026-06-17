@@ -19,19 +19,19 @@ As a developing software engineer, I chose this issue to learn best practices fo
 
 ### Problem Description
 
-[In your own words, what's broken or missing?]
+The Meltano Singer SDK only supports flat replication keys — field names that sit at the top level of a record, like `"updated_at"`. When a developer tries to use a dotted path like `"attributes.updated"` to point to a timestamp nested inside a sub-object, the SDK cannot find it. This means taps whose APIs return timestamps inside nested objects cannot use incremental replication without workarounds.
 
 ### Expected Behavior
 
-[What should happen?]
+When a developer sets `replication_key = "attributes.updated"`, the SDK should interpret the dot as a path separator and traverse the record to retrieve the value at `record["attributes"]["updated"]`. The retrieved timestamp should then be used to update the stream's bookmark in state, so the next sync only fetches records newer than that value.
 
 ### Current Behavior
 
-[What actually happens?]
+The SDK performs a flat dictionary lookup `record.get("attributes.updated")`, which returns `None` because no top-level key with that exact name exists. As a result, state is never updated, and the tap either re-syncs all records on every run or silently fails to track progress.
 
 ### Affected Components
 
-[Which parts of the codebase are involved?]
+The primary file is `singer_sdk/streams/core.py`, specifically the `_increment_stream_state()` method, where the replication key value is extracted from each record, and the `is_timestamp_replication_key` property, where the schema is validated against the key. The state management logic in `singer_sdk/streams/_state.py` is also involved, as it receives the key and performs its own record lookup.
 
 ---
 
@@ -121,7 +121,8 @@ Using UMPIRE framework (adapted):
   3.  Modify the `is_timestamp_replication_key` property in the same file to traverse the schema using the dotted path (e.g., `walking properties` → `attributes` → `properties` → `updated`) instead of a single-level `schema["properties"].get(key)`.
   4.  Update `singer_sdk/streams/_state.py`, where `increment_state` does its own record lookup, to also use the nested helper.
 
-**Implement:** [Link to your branch/commits as you work]
+**Implement:**
+  - Link to my working branch: https://github.com/daria-hrabar/sdk/tree/fix-issue-1198
 
 **Review:**
   - Run unit tests with `nox -r` and pre-commit hooks with `pre-commit run --all` before submitting.
