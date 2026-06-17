@@ -60,25 +60,25 @@ When working in VS Code, the virtual environment should become activated automat
 
 *Setting up the issue reproduction:*
 
-1. In the root of your local sdk folder, create a new Python file called reproducing_issue_1198.py.
+1. In the root of your local sdk folder, create a new Python file called `reproducing_issue_1198.py`.
 2. In the file, define a stream with a nested schema, meaning one field `attributes` contains sub-fields `created` and `updated` inside it, rather than all fields sitting at the top level.
 3. Set the stream's `replication_key` to `"attributes.updated"`—a dotted path pointing to the nested timestamp field.
 4. Add at least two fake records where the updated timestamp is stored inside attributes, not at the top level of the record.
 5. Add a print statement that shows what value the SDK resolves when it looks up the replication key against each record.
 
-*Running the reproduction*
+*Running the reproduction:*
 
 1. Confirm you are inside the sdk folder before running terminal commands.
 2. Confirm the virtual environment is active — your prompt should start with (singer-sdk).
 3. Run the file with `python reproducing_issue_1198.py`.
 4. Observe the output for both records in the terminal.
 
-*Confirming the bug*
+*Confirming the bug:*
 
 1. Check that the printed value for `replication_key` shows `"attributes.updated"`—the dotted path you set.
 2. Check that the printed SDK resolved value shows `None` for both records—this is the bug. The SDK cannot find the nested field and returns nothing instead of the expected timestamp.
 
-*Verifying the issue is consistent*
+*Verifying the issue is consistent:*
 
 1. Run `python reproducing_issue_1198.py` a second time without changing anything.
 2. Confirm the output is identical — both records return `None` again, proving the failure is consistent and not random.
@@ -105,20 +105,33 @@ When working in VS Code, the virtual environment should become activated automat
 
 Using UMPIRE framework (adapted):
 
-**Understand:** [Restate the problem]
+**Understand:**
+  - Currently, the SDK only supports flat replication keys—single field names like `"updated_at"` that sit at the top level of a record.
+  - When a developer sets `replication_key = "attributes.updated"` to point to a nested field, the SDK treats it as a literal dictionary key lookup `record.get("attributes.updated")`, which returns `None` because no top-level key named `"attributes.updated"` exists.
+  - As a result, state tracking silently fails—the SDK never bookmarks where it left off, causing either full re-syncs or missed records on every run.
+  - What should happen instead: `"attributes.updated"` should be interpreted as a dotted path, traversing `record["attributes"]["updated"]` to retrieve the actual timestamp value.
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+**Match:**
+  - The root lookup happens in `singer_sdk/streams/core.py` inside `_increment_stream_state()`, which calls `self.state_manager.increment_state(latest_record, replication_key=self.replication_key)`, passing the key as a flat string.
+  - The schema validation for the replication key is in the `is_timestamp_replication_key property` in the same file—it does `schema.get("properties", {}).get(self.replication_key)`, which also only works for flat keys.
 
-**Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+**Plan:**
+  1. Add a helper function (e.g., `get_nested_value(record, dotted_key))` that splits the key on "." and traverses the record dict level by level, returning `None` if any level is missing.
+  2.  Modify `_increment_stream_state()` in `singer_sdk/streams/core.py` to use the helper when extracting the replication key value from each record, instead of a flat lookup.
+  3.  Modify the `is_timestamp_replication_key` property in the same file to traverse the schema using the dotted path (e.g., `walking properties` → `attributes` → `properties` → `updated`) instead of a single-level `schema["properties"].get(key)`.
+  4.  Update `singer_sdk/streams/_state.py`, where `increment_state` does its own record lookup, to also use the nested helper.
 
 **Implement:** [Link to your branch/commits as you work]
 
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+**Review:**
+  - Run unit tests with `nox -r` and pre-commit hooks with `pre-commit run --all` before submitting.
+  - PR title must follow conventional commit format: `feat(streams): support nested replication keys via dotted path (#1198)`.
 
-**Evaluate:** [How will you verify it works?]
+**Evaluate:**
+  - Update `reproducing_issue_1198.py` to assert the resolved value equals the expected timestamp. If the fix works, the output changes from `None` to a datetime stamp.
+  - Write a formal test in `tests/` that creates a stream with a nested replication key and asserts the state is correctly incremented after processing records.
+  - Run `nox -rs` tests to execute the core test suite and confirm nothing else is broken.
+  - Manually run the reproduction script twice and confirm the bug no longer exists.
 
 ---
 
