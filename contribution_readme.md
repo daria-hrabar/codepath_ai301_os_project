@@ -39,14 +39,14 @@ As a developing software engineer, I chose this issue to learn best practices fo
 
 ### Environment Setup
 
-Step 1: Install project prerequisites on your local device. More details can be found on [the Prerequisites page](https://docs.meltano.com/contribute/prerequisites/) within the Meltano Documentation.
+*Step 1:* Install project prerequisites on your local device. More details can be found on [the Prerequisites page](https://docs.meltano.com/contribute/prerequisites/) within the Meltano Documentation.
   1. [Python 3.10+](https://www.python.org/downloads/)
   2. [uv](https://docs.astral.sh/uv/)
   3. [Node 18+](https://nodejs.org/)
   4. [Yarn](https://yarnpkg.com/)
   5. Although not listed as an official prerequisite, it is also recommended to install [Visual Studio Build Tools for C++](https://visualstudio.microsoft.com/visual-cpp-build-tools/) to avoid the ModuleNotFoundError.
 
-Step 2: Complete the setup of your local development environment.
+*Step 2:* Complete the setup of your local development environment.
   1. Clone the forked repository to your local device by either:
      - Running `git clone git@github.com:[your/github/file/path].git` and `cd sdk` in your terminal, or
      - Completing the process directly through GitHub Desktop.
@@ -58,9 +58,30 @@ When working in VS Code, the virtual environment should become activated automat
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+*Setting up the issue reproduction:*
+
+1. In the root of your local sdk folder, create a new Python file called reproducing_issue_1198.py.
+2. In the file, define a stream with a nested schema, meaning one field `attributes` contains sub-fields `created` and `updated` inside it, rather than all fields sitting at the top level.
+3. Set the stream's `replication_key` to `"attributes.updated"`—a dotted path pointing to the nested timestamp field.
+4. Add at least two fake records where the updated timestamp is stored inside attributes, not at the top level of the record.
+5. Add a print statement that shows what value the SDK resolves when it looks up the replication key against each record.
+
+*Running the reproduction*
+
+1. Confirm you are inside the sdk folder before running terminal commands.
+2. Confirm the virtual environment is active — your prompt should start with (singer-sdk).
+3. Run the file with `python reproducing_issue_1198.py`.
+4. Observe the output for both records in the terminal.
+
+*Confirming the bug*
+
+1. Check that the printed value for `replication_key` shows `"attributes.updated"`—the dotted path you set.
+2. Check that the printed SDK resolved value shows `None` for both records—this is the bug. The SDK cannot find the nested field and returns nothing instead of the expected timestamp.
+
+*Verifying the issue is consistent*
+
+1. Run `python reproducing_issue_1198.py` a second time without changing anything.
+2. Confirm the output is identical — both records return `None` again, proving the failure is consistent and not random.
 
 ### Reproduction Evidence
 
