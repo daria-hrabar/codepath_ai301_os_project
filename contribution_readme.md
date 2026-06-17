@@ -85,23 +85,11 @@ When working in VS Code, the virtual environment should become activated automat
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **Commit showing reproduction:** https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b
 
 ---
 
 ## Solution Approach
-
-### Analysis
-
-[Your analysis of the root cause - what's causing the issue?]
-
-### Proposed Solution
-
-[High-level description of your fix approach]
-
-### Implementation Plan
 
 Using UMPIRE framework (adapted):
 
