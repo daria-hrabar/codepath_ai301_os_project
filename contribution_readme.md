@@ -88,7 +88,7 @@ When working in VS Code, the virtual environment should become activated automat
 - *Issue Reproduction File Name:* `reproducing_issue_1198.py` (demonstrates the original bug using mock nested records)
 - *Issue Reproduction Commit:* [feat(streams): add reproduction script for nested replication keys meltano#1198](https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b)
 
-*Sample VS Code Terminal Output After Running `reproducing_issue_1198.py`*
+*Sample VS Code Terminal Output After Running `reproducing_issue_1198.py`:*
 
   ISSUE #1198 — Nested Replication Key Reproduction
 
