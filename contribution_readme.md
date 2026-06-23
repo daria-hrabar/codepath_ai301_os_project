@@ -88,7 +88,7 @@ When working in VS Code, the virtual environment should become activated automat
 - *Issue Reproduction File Name:* `reproducing_issue_1198.py` (demonstrates the original bug using mock nested records)
 - *Issue Reproduction Commit:* [feat(streams): add reproduction script for nested replication keys meltano#1198](https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b)
 
-*Sample VS Code Terminal Output After Running `reproducing_issue_1198.py*
+*Sample VS Code Terminal Output After Running `reproducing_issue_1198.py`*
 
   ISSUE #1198 — Nested Replication Key Reproduction
 
@@ -110,7 +110,15 @@ When working in VS Code, the virtual environment should become activated automat
 
 ## Solution Approach
 
-Using UMPIRE framework (adapted):
+### Analysis
+
+The root cause is a flat dictionary lookup in `singer_sdk/streams/core.py`. When the SDK needs to extract a replication key value from a record, it calls `record.get(replication_key)`, treating the key as a literal string. For a dotted key like `"attributes.updated"`, this looks for a top-level field named exactly `"attributes.updated"` — which does not exist — and returns `None`. The same flat lookup issue exists in `is_timestamp_replication_key`, where `schema.get("properties", {}).get(replication_key)` fails to find nested fields in the schema, incorrectly raising `InvalidReplicationKeyException` even when the field exists at a deeper level.
+
+### Proposed Solution
+
+Add a `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` that splits a dotted key on `"."` and traverses a dictionary level by level, returning `None` safely if any level is missing or not a dictionary. Update `_increment_stream_state()` in `core.py` to use this helper to extract the nested value before passing it to the state manager as a flat record it can look up correctly. Update `is_timestamp_replication_key` in the same file to walk the schema's nested `properties` blocks using the same dotted path logic, so nested fields are correctly identified as datetime types rather than raising an exception.
+
+### Using UMPIRE framework (adapted):
 
 **Understand:**
   - Currently, the SDK only supports flat replication keys—single field names like `"updated_at"` that sit at the top level of a record.
