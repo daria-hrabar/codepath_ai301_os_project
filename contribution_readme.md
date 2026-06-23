@@ -216,6 +216,7 @@ This confirms that the new `get_nested_value()` helper function traverses the do
 - `pre-commit run --all` — runs all code quality checks manually before committing
 
 **VS Code Extension Installed:**
+
 *Ruff extension* — provides real-time linting and auto-fix commands directly in the editor, eliminating most pre-commit failures before committing. Key commands used:
 - `>Ruff: Fix All` — auto-fixes all Ruff errors in the current file
 - `>Format Document` — applies Black formatting
