@@ -3,7 +3,7 @@
 **Contribution Number:** 1  
 **Student:** Daria Hrabar  
 **Issue:** https://github.com/meltano/sdk/issues/1198  
-**Status:** Phase II Complete
+**Status:** Phase III In Progress
 
 ---
 
@@ -19,7 +19,7 @@ As a developing software engineer, I chose this issue to learn best practices fo
 
 ### Problem Description
 
-The Meltano Singer SDK only supports flat replication keys — field names that sit at the top level of a record, like `"updated_at"`. When a developer tries to use a dotted path like `"attributes.updated"` to point to a timestamp nested inside a sub-object, the SDK cannot find it. This means taps whose APIs return timestamps inside nested objects cannot use incremental replication without workarounds.
+The Meltano Singer SDK only supports flat replication keys — field names that sit at the top level of a record, like `"updated_at"`. When a developer tries to use a dotted path like `"attributes.updated"` to access a timestamp nested within a sub-object, the SDK cannot find it. This means taps whose APIs return timestamps inside nested objects cannot use incremental replication without workarounds.
 
 ### Expected Behavior
 
@@ -27,7 +27,7 @@ When a developer sets `replication_key = "attributes.updated"`, the SDK should i
 
 ### Current Behavior
 
-The SDK performs a flat dictionary lookup `record.get("attributes.updated")`, which returns `None` because no top-level key with that exact name exists. As a result, state is never updated, and the tap either re-syncs all records on every run or silently fails to track progress.
+The SDK performs a flat dictionary lookup `record.get("attributes.updated")`, which returns `None` because no top-level key with that exact name exists. As a result, the state is never updated, and the tap either re-syncs all records on every run or silently fails to track progress.
 
 ### Affected Components
 
@@ -85,7 +85,25 @@ When working in VS Code, the virtual environment should become activated automat
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b
+- *Issue Reproduction File Name:* `reproducing_issue_1198.py` (demonstrates the original bug using mock nested records)
+- *Issue Reproduction Commit:* [feat(streams): add reproduction script for nested replication keys meltano#1198](https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b)
+- *Sample VS Code Terminal Output After Running `reproducing_issue_1198.py*
+
+  `ISSUE #1198 — Nested Replication Key Reproduction
+
+  Record: {'id': 1, 'attributes': {'created': '2024-01-01T00:00:00Z', 'updated': '2024-01-10T00:00:00Z'}}
+  replication_key = 'attributes.updated'
+  SDK resolved value = None
+  ✗ BUG CONFIRMED: SDK cannot resolve nested key.
+  Expected: '2024-01-10T00:00:00Z' (or similar)
+  Got: None — state tracking will silently fail.
+  
+  Record: {'id': 2, 'attributes': {'created': '2024-02-01T00:00:00Z', 'updated': '2024-02-15T00:00:00Z'}}
+  replication_key = 'attributes.updated'
+  SDK resolved value = None
+  ✗ BUG CONFIRMED: SDK cannot resolve nested key.
+  Expected: '2024-01-10T00:00:00Z' (or similar)
+  Got: None — state tracking will silently fail.`
 
 ---
 
@@ -110,7 +128,7 @@ Using UMPIRE framework (adapted):
   4.  Update `singer_sdk/streams/_state.py`, where `increment_state` does its own record lookup, to also use the nested helper.
 
 **Implement:**
-  - Link to my working branch: https://github.com/daria-hrabar/sdk/tree/fix-issue-1198
+  - Link to my working branch: [daria-hrabar/sdk at fix-issue-1198](https://github.com/daria-hrabar/sdk/tree/fix-issue-1198)
 
 **Review:**
   - Run unit tests with `nox -r` and pre-commit hooks with `pre-commit run --all` before submitting.
@@ -128,36 +146,93 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- *Test case 1:* Flat replication key — no regression. Verifies that existing flat keys like `updated_at` still resolve correctly after the fix, confirming no existing behavior was broken.
+- *Test case 2:* Two-level nested key traversal. Verifies that a dotted path like `properties.hs_lastmodifieddate` correctly traverses two dictionary levels and returns the timestamp value.
+- *Test case 3:* Three-level nested key traversal. Verifies that a path like `meta.audit.last_modified` traverses three levels correctly, confirming the fix is not limited to two levels.
+- *Test case 4:* Missing final key returns `None` safely. Verifies that when the last key in the path doesn't exist, the function returns `None` without crashing — e.g., `properties.nonexistent_field`.
+- *Test case 5:* Missing intermediate key returns `None` safely. Verifies that when an intermediate key doesn't exist at all, the function returns `None` — e.g., `organization.updated_at` on a record with no organization field.
+- *Test case 6:* Non-dictionary intermediate value returns `None` safely. Verifies that when an intermediate value is a string instead of a dict (e.g., `{"attributes": "corrupted-string"}`), the function returns `None` instead of raising an AttributeError.
+- *Test case 7:* Empty record returns `None` safely. Verifies behavior against an empty record `{}`.
+- *Test case 8:* `None` intermediate value returns `None` safely. Verifies that `{"properties": None}` does not crash when traversed.
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- *Integration scenario 1:* A stream with `replication_key = "attributes.updated"` processes two records with nested timestamps and correctly advances the state bookmark — confirmed via `verifying_fix_1198.py`, a modified issue reproduction script that utilizes `get_nested_value()` helper function imported from `singer_sdk/helpers/_util.py` to traverse records.
+- *Integration scenario 2:* Full test suite run via `nox -s tests` across all supported Python versions (3.10–3.14) confirms no existing stream, state, or replication behavior was broken by the changes to `core.py` and `_util.py`.
 
 ### Manual Testing
 
-[What you tested manually and results]
+Created and ran `verifying_fix_1198.py`. Both sample records resolved correctly after the fix was applied:
+
+<u>Sample VS Code Terminal Output:</u>
+`Record: {'id': 1, 'attributes': {'created': '2024-01-01T00:00:00Z', 'updated': '2024-01-10T00:00:00Z'}}
+  replication_key = 'attributes.updated'
+  Resolved value  = '2024-01-10T00:00:00Z'
+  Expected value  = '2024-01-10T00:00:00Z'
+  ✓ PASS: nested key resolved correctly.
+
+Record: {'id': 2, 'attributes': {'created': '2024-02-01T00:00:00Z', 'updated': '2024-02-15T00:00:00Z'}}
+  replication_key = 'attributes.updated'
+  Resolved value  = '2024-02-15T00:00:00Z'
+  Expected value  = '2024-02-15T00:00:00Z'
+  ✓ PASS: nested key resolved correctly.`
+
+This confirms that the new `get_nested_value()` helper function traverses the dotted path correctly and returns the actual timestamp instead of `None`.
 
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
+### Week 1 Progress
 
-[What you built this week, challenges faced, decisions made]
+**What was built:**
+- Added `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` to traverse nested dictionary paths using a dotted key string.
+- Updated `is_timestamp_replication_key` in `singer_sdk/streams/core.py` to traverse nested schema `properties` blocks using a dotted key path, so the property can correctly identify whether a nested field like `"attributes.updated"` is a datetime type instead of incorrectly raising InvalidReplicationKeyException when the field exists but is not at the top level of the schema.
+- Updated `_increment_stream_state()` in `singer_sdk/streams/core.py` to extract the nested value before passing it to the state manager, building a flat record the state manager can look up without modification.
+- Added formal unit tests to `tests/core/test_streams.py` covering happy path and major edge cases.
+- Created `verifying_fix_1198.py` in `tests/core` to confirm the solution is effective using mock nested records.
 
-### Week [Y] Progress
+**Challenges faced:**
+- GitHub Desktop pre-commit hook triggered InvalidManifestError on commit. Resolved by committing directly via Windows PowerShell instead.
+- `nox -s tests` failed across all Python versions with `os error 396` hardlink failures caused by the repo living inside a OneDrive-synced folder. Resolved by setting `UV_LINK_MODE=copy` permanently via `[System.Environment]::SetEnvironmentVariable("UV_LINK_MODE", "copy", "User")`, then clearing stale nox environments with `Remove-Item -Recurse -Force .nox\tests-3-10, .nox\tests-3-11, .nox\tests-3-12, .nox\tests-3-13` to force a clean reinstall on the next run.
+- Multiple Ruff pre-commit errors required iterative fixes: missing docstrings, missing type annotations, banned print() statements (resolved with `# noqa: T201`), and incorrect typing import conventions (resolved by using `import typing as t` and `t.TYPE_CHECKING` throughout).
 
-[Continue documenting as you work]
+**Windows PowerShell Commands Used:**
+- `git add <file>` — stages specific files for commit
+- `git commit -m "title" -m "description"` — commits with both title and body
+- `git push origin <branch-name>` — pushes local commits to the remote fork
+- `git pull origin <branch-name> --rebase` — syncs local branch with remote without creating a merge commit
+- `nox -s tests` — runs the full test suite across all supported Python versions
+- `pre-commit run --all` — runs all code quality checks manually before committing
+
+**VS Code Extension Installed:**
+*Ruff extension* — provides real-time linting and auto-fix commands directly in the editor, eliminating most pre-commit failures before committing.
+Key commands used:
+  >Ruff: Fix All — auto-fixes all Ruff errors in the current file
+  >Format Document — applies Black formatting
+  >Organize Imports — sorts and cleans up import statements
+
+### Week 2 Progress
+
+[To be added]
 
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+**Files Modified:**
+- `singer_sdk/helpers/_util.py` — added `get_nested_value()` helper
+- `singer_sdk/streams/core.py` — updated `is_timestamp_replication_key` and `_increment_stream_state()`
+- `tests/core/test_streams.py` — added unit tests and Ruff-required type annotation fixes
+- `verifying_fix_1198.py` — fix verification script (root of repo)
+
+**Key Commits:**
+- [feat(streams): add get_nested_value helper for dotted key traversal](https://github.com/daria-hrabar/sdk/commit/a93dd9a92857aa3004e26dc4f76e9acffec8e580)
+- [test(streams): add verification script confirming nested replication key fix](https://github.com/daria-hrabar/sdk/commit/e311a7a59ace0aa339a82b97f6886356db5f114b)
+- [test(streams): add unit tests for nested replication key resolution](https://github.com/daria-hrabar/sdk/commit/c600b3e743b6eb095349dc8cb0ed0d86ad8556d1)
+
+**Approach Decisions:** [Why you chose certain approaches]
+- Placed `get_nested_value()` in `_util.py` rather than inline in `core.py` so both `core.py` and `_state.py` can import it without circular dependencies, and to keep the helper independently testable.
+- Chose to flatten the record before passing to `increment_state()` rather than modifying `_state.py` directly, keeping the change smaller and limiting the risk of breaking other state management behavior.
+- Used `# noqa: T201` on all `print()` statements in reproduction scripts rather than replacing them with logging, since these are standalone scripts not part of the library itself.
 
 ---
 
