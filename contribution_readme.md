@@ -3,7 +3,7 @@
 **Contribution Number:** 1  
 **Student:** Daria Hrabar  
 **Issue:** https://github.com/meltano/sdk/issues/1198  
-**Status:** Phase III In Progress
+**Status:** Phase III Completed
 
 ---
 
@@ -90,21 +90,34 @@ When working in VS Code, the virtual environment should become activated automat
 
 *Sample VS Code Terminal Output After Running `reproducing_issue_1198.py`:*
 
-  ISSUE #1198 — Nested Replication Key Reproduction
 
-  Record: {'id': 1, 'attributes': {'created': '2024-01-01T00:00:00Z', 'updated': '2024-01-10T00:00:00Z'}}
-  replication_key = 'attributes.updated'
-  SDK resolved value = None
-  ✗ BUG CONFIRMED: SDK cannot resolve nested key.
-  Expected: '2024-01-10T00:00:00Z' (or similar)
-  Got: None — state tracking will silently fail.
+ISSUE #1198 — Nested Replication Key Reproduction
+
+
+Record: {'id': 1, 'attributes': {'created': '2024-01-01T00:00:00Z', 'updated': '2024-01-10T00:00:00Z'}}
+
+replication_key = 'attributes.updated'
+
+SDK resolved value = None
+
+✗ BUG CONFIRMED: SDK cannot resolve nested key.
+
+Expected: '2024-01-10T00:00:00Z' (or similar)
+
+Got: None — state tracking will silently fail.
   
-  Record: {'id': 2, 'attributes': {'created': '2024-02-01T00:00:00Z', 'updated': '2024-02-15T00:00:00Z'}}
-  replication_key = 'attributes.updated'
-  SDK resolved value = None
-  ✗ BUG CONFIRMED: SDK cannot resolve nested key.
-  Expected: '2024-01-10T00:00:00Z' (or similar)
-  Got: None — state tracking will silently fail.
+
+Record: {'id': 2, 'attributes': {'created': '2024-02-01T00:00:00Z', 'updated': '2024-02-15T00:00:00Z'}}
+
+replication_key = 'attributes.updated'
+
+SDK resolved value = None
+
+✗ BUG CONFIRMED: SDK cannot resolve nested key.
+
+Expected: '2024-01-10T00:00:00Z' (or similar)
+
+Got: None — state tracking will silently fail.
 
 ---
 
@@ -163,10 +176,12 @@ Add a `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` that
 - *Test case 6:* Non-dictionary intermediate value returns `None` safely. Verifies that when an intermediate value is a string instead of a dict (e.g., `{"attributes": "corrupted-string"}`), the function returns `None` instead of raising an AttributeError.
 - *Test case 7:* Empty record returns `None` safely. Verifies behavior against an empty record `{}`.
 - *Test case 8:* `None` intermediate value returns `None` safely. Verifies that `{"properties": None}` does not crash when traversed.
+- *Test case 9:* Integer intermediate value returns `None` safely. Verifies that when an intermediate value is an integer rather than a dictionary, the function returns `None` instead of raising an `AttributeError`, guarding against malformed API responses where a numeric value appears where an object is expected.
+- *Test case 10:* Invalid nested replication key raises `InvalidReplicationKeyException`. Verifies that when a dotted replication key points to a field that does not exist anywhere in the stream's schema, the `is_timestamp_replication_key` property correctly raises `InvalidReplicationKeyException`, confirming the schema validation error path still works correctly after the fix.
 
 ### Integration Tests
 
-- *Integration scenario 1:* A stream with `replication_key = "attributes.updated"` processes two records with nested timestamps and correctly advances the state bookmark — confirmed via `verifying_fix_1198.py`, a modified issue reproduction script that utilizes `get_nested_value()` helper function imported from `singer_sdk/helpers/_util.py` to traverse records.
+- *Integration scenario 1:* The `get_nested_value()` helper correctly resolves nested timestamp values from mock records — confirmed via `verifying_fix_1198.py`. Direct automated verification that the state bookmark advances after processing nested records was not implemented as a standalone unit test, since doing so cleanly requires a stream with a nested schema definition, which falls outside the scope of the existing `SimpleTestStream` fixture. Instead, the bookmark advancement logic is covered indirectly: `get_nested_value()` is proven to return the correct timestamp value, and `_increment_stream_state()` passes that value to `increment_state()` unchanged. End-to-end bookmark advancement would be confirmed during the maintainer review of the PR.
 - *Integration scenario 2:* Full test suite run via `nox -s tests` across all supported Python versions (3.10–3.14) confirms no existing stream, state, or replication behavior was broken by the changes to `core.py` and `_util.py`.
 
 ### Manual Testing
@@ -175,17 +190,28 @@ Created and ran `verifying_fix_1198.py`. Both sample records resolved correctly 
 
 *Sample VS Code Terminal Output:*
 
+
 Record: {'id': 1, 'attributes': {'created': '2024-01-01T00:00:00Z', 'updated': '2024-01-10T00:00:00Z'}}
-  replication_key = 'attributes.updated'
-  Resolved value  = '2024-01-10T00:00:00Z'
-  Expected value  = '2024-01-10T00:00:00Z'
-  ✓ PASS: nested key resolved correctly.
+
+replication_key = 'attributes.updated'
+
+Resolved value  = '2024-01-10T00:00:00Z'
+
+Expected value  = '2024-01-10T00:00:00Z'
+
+✓ PASS: nested key resolved correctly.
+
 
 Record: {'id': 2, 'attributes': {'created': '2024-02-01T00:00:00Z', 'updated': '2024-02-15T00:00:00Z'}}
-  replication_key = 'attributes.updated'
-  Resolved value  = '2024-02-15T00:00:00Z'
-  Expected value  = '2024-02-15T00:00:00Z'
-  ✓ PASS: nested key resolved correctly.
+
+replication_key = 'attributes.updated'
+
+Resolved value  = '2024-02-15T00:00:00Z'
+
+Expected value  = '2024-02-15T00:00:00Z'
+
+✓ PASS: nested key resolved correctly.
+
 
 This confirms that the new `get_nested_value()` helper function traverses the dotted path correctly and returns the actual timestamp instead of `None`.
 
@@ -195,14 +221,14 @@ This confirms that the new `get_nested_value()` helper function traverses the do
 
 ### Week 1 Progress
 
-**What was built:**
+**What Was Built:**
 - Added `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` to traverse nested dictionary paths using a dotted key string.
 - Updated `is_timestamp_replication_key` in `singer_sdk/streams/core.py` to traverse nested schema `properties` blocks using a dotted key path, so the property can correctly identify whether a nested field like `"attributes.updated"` is a datetime type instead of incorrectly raising InvalidReplicationKeyException when the field exists but is not at the top level of the schema.
 - Updated `_increment_stream_state()` in `singer_sdk/streams/core.py` to extract the nested value before passing it to the state manager, building a flat record the state manager can look up without modification.
 - Added formal unit tests to `tests/core/test_streams.py` covering happy path and major edge cases.
 - Created `verifying_fix_1198.py` in `tests/core` to confirm the solution is effective using mock nested records.
 
-**Challenges faced:**
+**Challenges Faced:**
 - GitHub Desktop pre-commit hook triggered InvalidManifestError on commit. Resolved by committing directly via Windows PowerShell instead.
 - `nox -s tests` failed across all Python versions with `os error 396` hardlink failures caused by the repo living inside a OneDrive-synced folder. Resolved by setting `UV_LINK_MODE=copy` permanently via `[System.Environment]::SetEnvironmentVariable("UV_LINK_MODE", "copy", "User")`, then clearing stale nox environments with `Remove-Item -Recurse -Force .nox\tests-3-10, .nox\tests-3-11, .nox\tests-3-12, .nox\tests-3-13` to force a clean reinstall on the next run.
 - Multiple Ruff pre-commit errors required iterative fixes: missing docstrings, missing type annotations, banned print() statements (resolved with `# noqa: T201`), and incorrect typing import conventions (resolved by using `import typing as t` and `t.TYPE_CHECKING` throughout).
@@ -224,7 +250,40 @@ This confirms that the new `get_nested_value()` helper function traverses the do
 
 ### Week 2 Progress
 
-[To be added]
+**What Was Built:**
+
+- Added two new unit tests to `tests/core/test_streams.py` to expand coverage: one verifying that an integer intermediate value returns `None` safely (`test_get_nested_value_integer_intermediate_returns_none`), and one verifying that an invalid nested replication key correctly raises `InvalidReplicationKeyException` (`test_invalid_nested_replication_key_raises`).
+- Moved `verifying_fix_1198.py` from `tests/core/` to the repo root alongside `reproducing_issue_1198.py`.
+- Re-ran `nox -s tests` after committing new unit tests, confirming 825 collected items and all sessions passing across Python 3.10–3.14 in under 2 minutes — significantly faster than the first full run due to cached nox environments.
+
+**Challenge Faced:**
+
+Determined that `_increment_stream_state()` end-to-end testing requires a stream with a nested schema, which is not available in the existing `SimpleTestStream` fixture — deferred this to maintainer feedback rather than introducing new fixture classes unnecessarily.
+
+**Windows PowerShell Output After The Latest Nox Test Suite Run:**
+
+
+nox > Session coverage was successful in 3 seconds.
+
+nox > Ran 6 sessions in 2 minutes:
+
+nox > * tests-3.10: success, took 20 seconds
+
+nox > * tests-3.11: success, took 21 seconds
+
+nox > * tests-3.12: success, took 22 seconds
+
+nox > * tests-3.13: success, took 19 seconds
+
+nox > * tests-3.14: success, took 17 seconds
+
+nox > * coverage: success, took 3 seconds
+
+**Test coverage improvements from Week 1 to Week 2:**
+
+- `singer_sdk/streams/core.py` — increased from 89% to 90% as a result of the new `test_invalid_nested_replication_key_raises` test covering additional lines in the `is_timestamp_replication_key` schema traversal logic.
+- `singer_sdk/streams/_state.py` — maintained at 100% with no regressions.
+- `singer_sdk/helpers/_util.py` — remained at 89%.
 
 ### Code Changes
 
@@ -238,11 +297,15 @@ This confirms that the new `get_nested_value()` helper function traverses the do
 - [feat(streams): add get_nested_value helper for dotted key traversal](https://github.com/daria-hrabar/sdk/commit/a93dd9a92857aa3004e26dc4f76e9acffec8e580)
 - [test(streams): add verification script confirming nested replication key fix](https://github.com/daria-hrabar/sdk/commit/e311a7a59ace0aa339a82b97f6886356db5f114b)
 - [test(streams): add unit tests for nested replication key resolution](https://github.com/daria-hrabar/sdk/commit/c600b3e743b6eb095349dc8cb0ed0d86ad8556d1)
+- [test(streams): add invalid nested key and integer intermediate edge case tests](https://github.com/meltano/sdk/commit/bde6e791a030d0d357c0077913e2b79952408714)
 
 **Approach Decisions:**
 - Placed `get_nested_value()` in `_util.py` rather than inline in `core.py` so both `core.py` and `_state.py` can import it without circular dependencies, and to keep the helper independently testable.
 - Chose to flatten the record before passing to `increment_state()` rather than modifying `_state.py` directly, keeping the change smaller and limiting the risk of breaking other state management behavior.
 - Used `# noqa: T201` on all `print()` statements in reproduction scripts rather than replacing them with logging, since these are standalone scripts not part of the library itself.
+- Inherited `SimpleTestStream` properties from `conftest.py` in new unit tests rather than creating new top-level stream and tap classes, keeping test code consistent with the existing patterns used throughout `test_streams.py` and avoiding unnecessary fixture bloat.
+- Returned `None` in edge case unit tests (missing keys, non-dictionary intermediate values, empty records) rather than raising exceptions, because `get_nested_value()` is called once per record during a live sync — raising an exception on every malformed record would crash the entire pipeline, whereas returning `None` allows the state manager to simply skip advancing the bookmark for that record safely.
+- Reused cached nox environments on subsequent test runs by not clearing `.nox/` between runs, reducing `nox -s tests` execution time from 8 minutes on the first run to 2 minutes on repeat runs.
 
 ---
 
