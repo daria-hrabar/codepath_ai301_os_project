@@ -313,13 +313,7 @@ nox > * coverage: success, took 3 seconds
 
 **PR Link:** [feat(streams): support nested replication keys via dotted path #3690](https://github.com/meltano/sdk/pull/3690)
 
-**PR Content**
-
-*PR Title:*
-feat(streams): support nested replication keys via dotted path
-
-*PR Description:*
-
+**PR Description:**
 ---
 
 ## What does this PR do?
