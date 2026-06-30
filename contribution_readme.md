@@ -313,56 +313,7 @@ nox > * coverage: success, took 3 seconds
 
 **PR Link:** [feat(streams): support nested replication keys via dotted path #3690](https://github.com/meltano/sdk/pull/3690)
 
-**PR Description:**
-
----
-
-## What does this PR do?
-
-Adds support for nested replication keys in the Singer SDK by introducing a `get_nested_value()` helper in `singer_sdk/helpers/_util.py` that traverses a record dictionary level by level using a dotted key path (e.g., `"attributes.updated"`). The `_increment_stream_state()` method and `is_timestamp_replication_key` property in `singer_sdk/streams/core.py` are updated to use this traversal instead of a flat dictionary lookup, enabling tap developers to point replication keys at timestamp fields nested inside sub-objects rather than only at top-level fields.
-
-## Why was this PR needed?
-
-Many real-world APIs — including HubSpot, Salesforce, and GitHub — return timestamps nested inside sub-objects. Before this fix, setting `replication_key = "attributes.updated"` caused the SDK to perform a flat lookup (`record.get("attributes.updated")`), which returned `None` because no top-level key with that literal name exists. As a result, the state was never updated, and the tap silently re-synced all records on every run.
-
-Investigation traced the root cause to two locations in `singer_sdk/streams/core.py`:
-
-- `_increment_stream_state()` passed the raw record directly to `increment_state()`, which performed a flat key lookup returning `None` for dotted paths
-- `is_timestamp_replication_key` called `schema.get("properties", {}).get(replication_key)` which only checked the schema's top level, incorrectly raising `InvalidReplicationKeyException` even when the field existed at a deeper level
-
-The fix keeps `singer_sdk/streams/_state.py` unchanged by flattening the extracted value into a flat record before passing it to the state manager, limiting the scope of the change and reducing regression risk.
-
-## What are the relevant issue numbers?
-
-Closes #1198
-
-## Does this PR meet the acceptance criteria?
-
-- [x] Tests added for new/changed behavior
-- [x] All tests passing
-- [x] Follows project style guide
-- [x] No breaking changes introduced
-
-## Summary by Sourcery
-
-Support incremental replication using dotted-path replication keys that point to nested timestamp fields, updating schema validation, state management, and tests to reliably handle nested structures.
-
-New Features:
-- Support nested replication keys for stream replication using dotted key paths.
-- Add a get_nested_value helper for resolving values from nested record dictionaries via dotted paths.
-
-Bug Fixes:
-- Ensure timestamp replication key validation correctly traverses nested schema properties instead of only top-level fields.
-- Fix state increment logic so replication keys referencing nested fields update bookmarks rather than always returning None.
-
-Enhancements:
-- Improve type hints and docstrings in stream tests and core stream methods for clarity.
-
-Tests:
-- Add unit tests covering nested replication key resolution, edge cases, and invalid schema configurations.
-- Introduce reproduction and verification scripts for Issue #1198 to demonstrate the previous bug and the applied fix.
-
----
+**PR Description:** I contributed a fix for nested replication key support in the Meltano Singer SDK by introducing a `get_nested_value()` helper that traverses dotted paths like `"attributes.updated"` through nested record dictionaries, and wiring it into `_increment_stream_state()` and `is_timestamp_replication_key` in `core.py` to replace the existing flat dictionary lookups that caused state tracking to silently fail for nested timestamp fields.
 
 **Maintainer Feedback:**
 - 6/30/2026:
