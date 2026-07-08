@@ -383,7 +383,7 @@ The screenshots below show the Codecov report and CI check status as of the late
 
 [Screenshot 1: Codecov Report Updated](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/8a0223ca0cf0760a5031a9bef8edd135afd44f30/Codecov%20Report%20Updated.png)
 
-*Current CI status:** All 36 checks passed, 1 skipped (external tests requiring credentials). No merge conflicts detected.
+*Current CI status:* All 36 checks passed, 1 skipped (external tests requiring credentials). No merge conflicts detected.
 
 [Screenshot 2: Current CI Status](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/main/PR%20Checks%20Passed.png)
 
