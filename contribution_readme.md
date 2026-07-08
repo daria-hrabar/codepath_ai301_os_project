@@ -324,7 +324,7 @@ nox > * coverage: success, took 3 seconds
 
 *CodSpeed* confirmed that merging this PR will not alter performance, with all 14 existing benchmarks untouched.
 
-**Status:** Awaiting additional review / Iterating
+**Status:** Awaiting maintainer review & Iterating
 
 ---
 
@@ -349,3 +349,26 @@ nox > * coverage: success, took 3 seconds
 - [Link to helpful documentation]
 - [Tutorial or Stack Overflow post that helped]
 - [GitHub issues or discussions that helped]
+
+---
+
+## AI Disclosure
+
+This contribution was completed as part of a CodePath AI301 Open-Source Capstone course. AI tools were used throughout the process as a learning and development aid.
+
+**Tools used:** Claude AI (Anthropic)
+
+**How AI was used:**
+- Explaining unfamiliar SDK concepts, Python syntax, and Git commands during environment setup and testing
+- Navigating the codebase to identify the root cause and affected files/code
+- Reproducing the bug, which I confirmed consistently across multiple runs
+- Drafting and iterating on implementation code, which I reviewed, tested, and modified
+- Generating unit tests, which I evaluated for coverage scope and correctness and adapted to fit existing SDK patterns
+- Reviewing pre-commit errors and suggesting fixes, which I applied and verified
+- Drafting the PR and commit titles/descriptions, which I reviewed and edited
+
+**What I did independently:**
+- Made all final decisions about implementation approach and test strategy
+- Ran and interpreted all test suite results via `nox -s tests`
+- Reviewed all AI-generated code before committing — no AI output was committed without my understanding and verification
+- Identified when AI suggestions were incorrect or inappropriate for the codebase (e.g., avoiding unnecessary comments, print lines, or new classes in tests)
