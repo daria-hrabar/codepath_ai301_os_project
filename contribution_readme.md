@@ -345,6 +345,8 @@ nox > * coverage: success, took 3 seconds
 - [test(streams): add verification script confirming nested replication key fix](https://github.com/daria-hrabar/sdk/commit/e311a7a59ace0aa339a82b97f6886356db5f114b)
 - [test(streams): add unit tests for nested replication key resolution](https://github.com/daria-hrabar/sdk/commit/c600b3e743b6eb095349dc8cb0ed0d86ad8556d1)
 - [test(streams): add invalid nested key and integer intermediate edge case tests](https://github.com/meltano/sdk/commit/bde6e791a030d0d357c0077913e2b79952408714)
+- [refactor(streams): broaden get_nested_value input type from dict to Mapping](https://github.com/daria-hrabar/sdk/commit/5ca0f6be056cdfbb4ec04307e881278c48c558db)
+- [test(streams): add _increment_stream_state tests for flat and nested replication keys](https://github.com/daria-hrabar/sdk/commit/9803d9589f26540f603645f6777aae4e378a1314)
 
 **Approach Decisions:**
 - Placed `get_nested_value()` in `_util.py` rather than inline in `core.py` so both `core.py` and `_state.py` can import it without circular dependencies, and to keep the helper independently testable.
@@ -379,11 +381,11 @@ The screenshots below show the Codecov report and CI check status as of the late
 
 *Codecov:* At the time of the initial Codecov comment, patch coverage was 88% with 3 lines missing. After implementing the `_increment_stream_state` tests in Week 3, patch coverage reached 100%, and all modified lines are now covered.
 
-[Codecov Report Updated](Codecov Report Updated.png)
+[Codecov Report Updated](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/8a0223ca0cf0760a5031a9bef8edd135afd44f30/Codecov%20Report%20Updated.png)
 
 *Current CI status:** All 36 checks passed, 1 skipped (external tests requiring credentials). No merge conflicts detected.
 
-[PR Checks Passed](PR Checks Passed.png)
+[PR Checks Passed](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/main/PR%20Checks%20Passed.png)
 
 **Status:** Awaiting maintainer review & Iterating
 
