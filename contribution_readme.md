@@ -85,8 +85,9 @@ When working in VS Code, the virtual environment should become activated automat
 
 ### Reproduction Evidence
 
-- *Issue Reproduction File Name:* `reproducing_issue_1198.py` (demonstrates the original bug using mock nested records)
-- *Issue Reproduction Commit:* [feat(streams): add reproduction script for nested replication keys meltano#1198](https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b)
+- *Issue reproduction file name:* `reproducing_issue_1198.py` (demonstrates the original bug using mock nested records)
+- *Issue reproduction commit:* [feat(streams): add reproduction script for nested replication keys meltano#1198](https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b)
+- *Commit moving the issue reproduction script from the fork to the [`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repository:* [Add reproducing_issue_1198.py & verifying_fix_1198.py](https://github.com/daria-hrabar/codepath_ai301_os_project/commit/e3efa28acb3d17bcb0b0a9b333e633dd444c82a5)
 
 *Sample VS Code Terminal Output After Running `reproducing_issue_1198.py`:*
 
@@ -186,7 +187,7 @@ Add a `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` that
 
 ### Manual Testing
 
-Created and ran `verifying_fix_1198.py`. Both sample records resolved correctly after the fix was applied.
+Created and ran `verifying_fix_1198.py`. Both sample records resolved correctly after the fix was applied. **As a result of implementing Sourcery AI feedback, `verifying_fix_1198.py` was moved from the fork to the [`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repository via the following commit:** [Add reproducing_issue_1198.py & verifying_fix_1198.py](https://github.com/daria-hrabar/codepath_ai301_os_project/commit/e3efa28acb3d17bcb0b0a9b333e633dd444c82a5)
 
 *Sample VS Code Terminal Output:*
 
@@ -291,7 +292,7 @@ nox > * coverage: success, took 3 seconds
 - `singer_sdk/helpers/_util.py` — added `get_nested_value()` helper
 - `singer_sdk/streams/core.py` — updated `is_timestamp_replication_key` and `_increment_stream_state()`
 - `tests/core/test_streams.py` — added unit tests and Ruff-required type annotation fixes
-- `verifying_fix_1198.py` — fix verification script (root of repo)
+- `verifying_fix_1198.py` — fix verification script ([`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repo)
 
 **Key Commits:**
 - [feat(streams): add get_nested_value helper for dotted key traversal](https://github.com/daria-hrabar/sdk/commit/a93dd9a92857aa3004e26dc4f76e9acffec8e580)
