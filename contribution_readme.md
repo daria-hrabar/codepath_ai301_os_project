@@ -179,10 +179,12 @@ Add a `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` that
 - *Test case 8:* `None` intermediate value returns `None` safely. Verifies that `{"properties": None}` does not crash when traversed.
 - *Test case 9:* Integer intermediate value returns `None` safely. Verifies that when an intermediate value is an integer rather than a dictionary, the function returns `None` instead of raising an `AttributeError`, guarding against malformed API responses where a numeric value appears where an object is expected.
 - *Test case 10:* Invalid nested replication key raises `InvalidReplicationKeyException`. Verifies that when a dotted replication key points to a field that does not exist anywhere in the stream's schema, the `is_timestamp_replication_key` property correctly raises `InvalidReplicationKeyException`, confirming the schema validation error path still works correctly after the fix.
+- *Test case 11:* `_increment_stream_state` passes original record unchanged for flat keys. Verifies that when a flat replication key like `"updatedAt"` is used, `_increment_stream_state()` passes the original record directly to the state manager without modification, confirming no regression in existing behavior.
+- *Test case 12:* `_increment_stream_state` passes flattened record for nested keys. Verifies that when a dotted replication key like `"meta.audit.last_modified"` is used, `_increment_stream_state()` extracts the nested value and builds a flat record `{"meta.audit.last_modified": <value>}` before passing it to the state manager.
 
 ### Integration Tests
 
-- *Integration scenario 1:* The `get_nested_value()` helper correctly resolves nested timestamp values from mock records — confirmed via `verifying_fix_1198.py`. Direct automated verification that the state bookmark advances after processing nested records was not implemented as a standalone unit test, since doing so cleanly requires a stream with a nested schema definition, which falls outside the scope of the existing `SimpleTestStream` fixture. Instead, the bookmark advancement logic is covered indirectly: `get_nested_value()` is proven to return the correct timestamp value, and `_increment_stream_state()` passes that value to `increment_state()` unchanged. End-to-end bookmark advancement would be confirmed during the maintainer review of the PR.
+- *Integration scenario 1:* The `get_nested_value()` helper correctly resolves nested timestamp values from mock records — confirmed via `verifying_fix_1198.py`. State manager integration is now also covered by unit tests using a `_FakeStateManager` stub injected via `patch.object(type(stream), "state_manager", ...)`, which intercepts and records `increment_state()` calls to verify that flat keys pass the original record unchanged and nested keys pass a correctly flattened record.
 - *Integration scenario 2:* Full test suite run via `nox -s tests` across all supported Python versions (3.10–3.14) confirms no existing stream, state, or replication behavior was broken by the changes to `core.py` and `_util.py`.
 
 ### Manual Testing
@@ -286,10 +288,54 @@ nox > * coverage: success, took 3 seconds
 - `singer_sdk/streams/_state.py` — maintained at 100% with no regressions.
 - `singer_sdk/helpers/_util.py` — remained at 89%.
 
+### Week 3 Progress
+
+**What was built:**
+
+- Reproduction and verification scripts flagged as ad-hoc — removed from repo root and moved to the [`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repository.
+- Updated `get_nested_value()` in `singer_sdk/helpers/_util.py` in response to Sourcery bot feedback: broadened the input type from `dict` to `t.Mapping[str, t.Any]` to support all SDK mapping types, replaced `isinstance(current, dict)` with `isinstance(current, Mapping)` from `collections.abc`, replaced the ambiguous `current.get(key)` + `if current is None` pattern with an explicit `if key not in current` check, and added a `missing` sentinel parameter to distinguish between a missing key and a key whose value is explicitly `None`.
+- Added two `_increment_stream_state` integration tests to `tests/core/test_streams.py` using a `_FakeStateManager` stub to verify what gets passed to the state manager for flat vs nested replication keys.
+- Updated PR title from `feat(streams): support nested replication keys via dotted path` to `feat: support nested replication keys via dotted path` to comply with the SDK's semantic PR scope conventions.
+
+**Challenges faced:**
+
+- `state_manager` is a read-only class-level property in the SDK — it has no setter or deleter. Direct assignment (`stream.state_manager = fake`) raised `AttributeError`, and `patch.object(stream, ...)` also failed because `patch` internally tries to set and later delete the attribute on the instance. The fix was to target the **class** instead: `patch.object(type(stream), "state_manager", new=fake_state_manager)`, which patches the property at the class level where Python allows replacement.
+- The `_FakeStateManager.increment_state` method initially named its context parameter `_context` (to signal intentional non-use to Ruff), but the SDK calls it with `context=context` as a keyword argument — causing `TypeError: unexpected keyword argument 'context'`. Resolved by replacing the named parameter with `**_kwargs` to accept all keyword arguments silently without Ruff flagging any as unused.
+
+**Terminal output — `nox -s tests`:**
+
+
+nox > Ran 6 sessions in 2 minutes:
+
+
+nox > * tests-3.10: success, took 21 seconds
+
+
+nox > * tests-3.11: success, took 20 seconds
+
+
+nox > * tests-3.12: success, took 24 seconds
+
+
+nox > * tests-3.13: success, took 21 seconds
+
+
+nox > * tests-3.14: success, took 18 seconds
+
+
+nox > * coverage: success, took 3 seconds
+
+
+**Test coverage improvements from Week 2 to Week 3:**
+
+- `singer_sdk/helpers/_util.py` — increased from 89% to 90% as a result of the broadened `Mapping` type and sentinel parameter changes covering additional branches.
+- `singer_sdk/streams/core.py` — increased from 90% to 91% as a result of the new `_increment_stream_state` tests covering additional lines.
+- `singer_sdk/streams/_state.py` — maintained at 100% with no regressions.
+
 ### Code Changes
 
 **Files Modified:**
-- `singer_sdk/helpers/_util.py` — added `get_nested_value()` helper
+- `singer_sdk/helpers/_util.py` — added `get_nested_value()` helper, broadened input type to `Mapping`, replaced ambiguous `None` check with explicit key presence check, added `missing` sentinel parameter
 - `singer_sdk/streams/core.py` — updated `is_timestamp_replication_key` and `_increment_stream_state()`
 - `tests/core/test_streams.py` — added unit tests and Ruff-required type annotation fixes
 - `verifying_fix_1198.py` — fix verification script ([`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repo)
@@ -307,6 +353,8 @@ nox > * coverage: success, took 3 seconds
 - Inherited `SimpleTestStream` properties from `conftest.py` in new unit tests rather than creating new top-level stream and tap classes, keeping test code consistent with the existing patterns used throughout `test_streams.py` and avoiding unnecessary fixture bloat.
 - Returned `None` in edge case unit tests (missing keys, non-dictionary intermediate values, empty records) rather than raising exceptions, because `get_nested_value()` is called once per record during a live sync — raising an exception on every malformed record would crash the entire pipeline, whereas returning `None` allows the state manager to simply skip advancing the bookmark for that record safely.
 - Reused cached nox environments on subsequent test runs by not clearing `.nox/` between runs, reducing `nox -s tests` execution time from 8 minutes on the first run to 2 minutes on repeat runs.
+- Used `patch.object(type(stream), "state_manager", new=fake_state_manager)` to inject the fake state manager into tests rather than targeting the instance directly, because `state_manager` is a read-only class-level property with no setter. Patching the class bypasses this restriction.
+- Used `**_kwargs` in the stub's `increment_state` signature to silently absorb the `context=` keyword argument the SDK passes, avoiding both a `TypeError` at runtime and an unused-argument warning from Ruff.
 
 ---
 
@@ -317,13 +365,25 @@ nox > * coverage: success, took 3 seconds
 **PR Description:** I contributed a fix for nested replication key support in the Meltano Singer SDK by introducing a `get_nested_value()` helper that traverses dotted paths like `"attributes.updated"` through nested record dictionaries, and wiring it into `_increment_stream_state()` and `is_timestamp_replication_key` in `core.py` to replace the existing flat dictionary lookups that caused state tracking to silently fail for nested timestamp fields.
 
 **Maintainer Feedback:**
-- 6/30/2026:
+- **6/30/2026:**
 
 *Sourcery AI* identified two high-level concerns and left two specific code comments. At the top level, it flagged that `reproducing_issue_1198.py` and `verifying_fix_1198.py` look like ad-hoc debugging helpers sitting at the repo root and suggested moving them into an `examples/` directory or excluding them from the package entirely. It also noted that `is_timestamp_replication_key` assumes every intermediate schema key corresponds to an object with a `properties` block, and that schemas using `additionalProperties` or arrays of objects may not be handled correctly. In the code comments, it suggested broadening the `get_nested_value()` input type from `dict` to `t.Mapping[str, t.Any]` for wider usability across the SDK, and introducing a `missing` sentinel parameter to allow callers to distinguish between a path that doesn't exist and a path whose leaf value is explicitly `None`. It also requested tests covering `_increment_stream_state()` directly — verifying that flat keys pass the original record unchanged and nested keys pass a flattened record to the state manager — suggesting a `_FakeStateManager` stub approach to avoid coupling to the state implementation.
 
 *Codecov* reported that patch coverage is `88%` with 3 lines in the changed code missing coverage, specifically 2 missing lines and 1 partial branch in `singer_sdk/streams/core.py`. Overall project coverage dropped slightly from `94.21%` to `94.19%`.
 
 *CodSpeed* confirmed that merging this PR will not alter performance, with all 14 existing benchmarks untouched.
+
+- **7/7/2026**
+
+The screenshots below show the Codecov report and CI check status as of the latest push to the PR.
+
+*Codecov:* At the time of the initial Codecov comment, patch coverage was 88% with 3 lines missing. After implementing the `_increment_stream_state` tests in Week 3, patch coverage reached 100%, and all modified lines are now covered.
+
+[Codecov Report Updated](Codecov Report Updated.png)
+
+*Current CI status:** All 36 checks passed, 1 skipped (external tests requiring credentials). No merge conflicts detected.
+
+[PR Checks Passed](PR Checks Passed.png)
 
 **Status:** Awaiting maintainer review & Iterating
 
