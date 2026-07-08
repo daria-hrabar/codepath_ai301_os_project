@@ -381,11 +381,11 @@ The screenshots below show the Codecov report and CI check status as of the late
 
 *Codecov:* At the time of the initial Codecov comment, patch coverage was 88% with 3 lines missing. After implementing the `_increment_stream_state` tests in Week 3, patch coverage reached 100%, and all modified lines are now covered.
 
-[Codecov Report Updated](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/8a0223ca0cf0760a5031a9bef8edd135afd44f30/Codecov%20Report%20Updated.png)
+[Screenshot 1: Codecov Report Updated](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/8a0223ca0cf0760a5031a9bef8edd135afd44f30/Codecov%20Report%20Updated.png)
 
 *Current CI status:** All 36 checks passed, 1 skipped (external tests requiring credentials). No merge conflicts detected.
 
-[PR Checks Passed](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/main/PR%20Checks%20Passed.png)
+[Screenshot 2: Current CI Status](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/main/PR%20Checks%20Passed.png)
 
 **Status:** Awaiting maintainer review & Iterating
 
