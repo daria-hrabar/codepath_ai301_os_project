@@ -89,7 +89,7 @@ When working in VS Code, the virtual environment should become activated automat
 - *Issue reproduction commit:* [feat(streams): add reproduction script for nested replication keys meltano#1198](https://github.com/daria-hrabar/sdk/commit/db4519ce800bf2ac2305216f3a560f259c22933b)
 - *Commit moving the issue reproduction script from the fork to the [`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repository:* [Add reproducing_issue_1198.py & verifying_fix_1198.py](https://github.com/daria-hrabar/codepath_ai301_os_project/commit/e3efa28acb3d17bcb0b0a9b333e633dd444c82a5)
 
-*Sample VS Code Terminal Output After Running `reproducing_issue_1198.py`:*
+*Sample VS Code terminal output after running `reproducing_issue_1198.py`:*
 
 
 ISSUE #1198 — Nested Replication Key Reproduction
@@ -132,7 +132,7 @@ The root cause is a flat dictionary lookup in `singer_sdk/streams/core.py`. When
 
 Add a `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` that splits a dotted key on `"."` and traverses a dictionary level by level, returning `None` safely if any level is missing or not a dictionary. Update `_increment_stream_state()` in `core.py` to use this helper to extract the nested value before passing it to the state manager as a flat record it can look up correctly. Update `is_timestamp_replication_key` in the same file to walk the schema's nested `properties` blocks using the same dotted path logic, so nested fields are correctly identified as datetime types rather than raising an exception.
 
-### Using UMPIRE framework (adapted):
+### Using UMPIRE Framework (Adapted):
 
 **Understand:**
   - Currently, the SDK only supports flat replication keys—single field names like `"updated_at"` that sit at the top level of a record.
@@ -191,7 +191,7 @@ Add a `get_nested_value()` helper function to `singer_sdk/helpers/_util.py` that
 
 Created and ran `verifying_fix_1198.py`. Both sample records resolved correctly after the fix was applied. **As a result of implementing Sourcery AI feedback, `verifying_fix_1198.py` was moved from the fork to the [`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repository via the following commit:** [Add reproducing_issue_1198.py & verifying_fix_1198.py](https://github.com/daria-hrabar/codepath_ai301_os_project/commit/e3efa28acb3d17bcb0b0a9b333e633dd444c82a5)
 
-*Sample VS Code Terminal Output:*
+*Sample VS Code terminal output after running `verifying_fix_1198.py`:*
 
 
 Record: {'id': 1, 'attributes': {'created': '2024-01-01T00:00:00Z', 'updated': '2024-01-10T00:00:00Z'}}
@@ -263,7 +263,7 @@ This confirms that the new `get_nested_value()` helper function traverses the do
 
 Determined that `_increment_stream_state()` end-to-end testing requires a stream with a nested schema, which is not available in the existing `SimpleTestStream` fixture — deferred this to maintainer feedback rather than introducing new fixture classes unnecessarily.
 
-**Windows PowerShell Output After The Latest Nox Test Suite Run:**
+**Windows PowerShell Output After the Latest Nox Test Suite Run:**
 
 
 nox > Session coverage was successful in 3 seconds.
@@ -282,7 +282,7 @@ nox > * tests-3.14: success, took 17 seconds
 
 nox > * coverage: success, took 3 seconds
 
-**Test coverage improvements from Week 1 to Week 2:**
+**Test Coverage Improvement from Week 1 to Week 2:**
 
 - `singer_sdk/streams/core.py` — increased from 89% to 90% as a result of the new `test_invalid_nested_replication_key_raises` test covering additional lines in the `is_timestamp_replication_key` schema traversal logic.
 - `singer_sdk/streams/_state.py` — maintained at 100% with no regressions.
@@ -290,19 +290,19 @@ nox > * coverage: success, took 3 seconds
 
 ### Week 3 Progress
 
-**What was built:**
+**What Was Built:**
 
 - Reproduction and verification scripts flagged as ad-hoc — removed from repo root and moved to the [`codepath_ai301_os_project`](https://github.com/daria-hrabar/codepath_ai301_os_project.git) repository.
 - Updated `get_nested_value()` in `singer_sdk/helpers/_util.py` in response to Sourcery bot feedback: broadened the input type from `dict` to `t.Mapping[str, t.Any]` to support all SDK mapping types, replaced `isinstance(current, dict)` with `isinstance(current, Mapping)` from `collections.abc`, replaced the ambiguous `current.get(key)` + `if current is None` pattern with an explicit `if key not in current` check, and added a `missing` sentinel parameter to distinguish between a missing key and a key whose value is explicitly `None`.
 - Added two `_increment_stream_state` integration tests to `tests/core/test_streams.py` using a `_FakeStateManager` stub to verify what gets passed to the state manager for flat vs nested replication keys.
 - Updated PR title from `feat(streams): support nested replication keys via dotted path` to `feat: support nested replication keys via dotted path` to comply with the SDK's semantic PR scope conventions.
 
-**Challenges faced:**
+**Challenges Faced:**
 
 - `state_manager` is a read-only class-level property in the SDK — it has no setter or deleter. Direct assignment (`stream.state_manager = fake`) raised `AttributeError`, and `patch.object(stream, ...)` also failed because `patch` internally tries to set and later delete the attribute on the instance. The fix was to target the **class** instead: `patch.object(type(stream), "state_manager", new=fake_state_manager)`, which patches the property at the class level where Python allows replacement.
 - The `_FakeStateManager.increment_state` method initially named its context parameter `_context` (to signal intentional non-use to Ruff), but the SDK calls it with `context=context` as a keyword argument — causing `TypeError: unexpected keyword argument 'context'`. Resolved by replacing the named parameter with `**_kwargs` to accept all keyword arguments silently without Ruff flagging any as unused.
 
-**Terminal output — `nox -s tests`:**
+**Windows PowerShell Output After the Latest Nox Test Suite Run:**
 
 
 nox > Ran 6 sessions in 2 minutes:
@@ -326,7 +326,7 @@ nox > * tests-3.14: success, took 18 seconds
 nox > * coverage: success, took 3 seconds
 
 
-**Test coverage improvements from Week 2 to Week 3:**
+**Test Coverage Improvement from Week 2 to Week 3:**
 
 - `singer_sdk/helpers/_util.py` — increased from 89% to 90% as a result of the broadened `Mapping` type and sentinel parameter changes covering additional branches.
 - `singer_sdk/streams/core.py` — increased from 90% to 91% as a result of the new `_increment_stream_state` tests covering additional lines.
@@ -387,7 +387,7 @@ The screenshots below show the Codecov report and CI check status as of the late
 
 [Screenshot 2: Current CI Status](https://github.com/daria-hrabar/codepath_ai301_os_project/blob/main/PR%20Checks%20Passed.png)
 
-**Status:** Awaiting maintainer review & Iterating
+**Status:** Awaiting maintainer review
 
 ---
 
