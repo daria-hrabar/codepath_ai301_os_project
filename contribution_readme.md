@@ -405,7 +405,7 @@ The screenshots below show the Codecov report and CI check status as of the late
   - Writing unit tests and manual tests
   - Preparing a PR and iterating over the maintainers' feedback
 
-**Open-Source Contributing**
+**Open-Source Contributing:**
 - Identifying a scoped, reproducible, and well-documented issue
 - Navigating an unfamiliar codebase and reproducing the issue
 - Applying the UMPIRE (Understand, Match, Plan, Implement, Review, Evaluate) method to streamline solution development, integration, and testing
@@ -413,9 +413,9 @@ The screenshots below show the Codecov report and CI check status as of the late
 
 ### Challenges Overcome
 
-*Challenge 1*: Understanding the issue and its context. Leveraged Claude AI and Meltano SDK documentation to learn more about unfamiliar programming concepts and terminal commands.
+*Challenge 1:* Understanding the issue and its context. Leveraged Claude AI and Meltano SDK documentation to learn more about unfamiliar programming concepts and terminal commands.
 
-*Challenge 2*: Understanding and completing pre-commit checks. Overcame by switching from GitHub Desktop to Windows PowerShell/Git commands, as well as using Claude AI to explain failed checks and find the best solutions to discovered issues.
+*Challenge 2:* Understanding and completing pre-commit checks. Overcame by switching from GitHub Desktop to Windows PowerShell/Git commands, as well as using Claude AI to explain failed checks and find the best solutions to discovered issues.
 
 *Challenge 3:* Low-response codebase maintainers. Utilized bot feedback and Claude AI suggestions to polish my code. Regularly followed up with maintainers via GitHub comments and ensured a properly formatted PR.
 
