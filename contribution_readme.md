@@ -395,23 +395,45 @@ The screenshots below show the Codecov report and CI check status as of the late
 
 ### Technical Skills Gained
 
-[What you learned technically]
+**Artificial Intelligence:**
+- AI prompt engineering (Claude AI Sonnet)
+- Applied AI engineering for purposes such as:
+  - Explaining unfamiliar technical concepts, Python syntax, and Git commands
+  - Setting up local environment
+  - Analyzing the codebase to locate bugs and their root causes
+  - Planning and implementing the solution
+  - Writing unit tests and manual tests
+  - Preparing a PR and iterating over the maintainers' feedback
+
+**Open-Source Contributing**
+- Identifying a scoped, reproducible, and well-documented issue
+- Navigating an unfamiliar codebase and reproducing the issue
+- Applying the UMPIRE (Understand, Match, Plan, Implement, Review, Evaluate) method to streamline solution development, integration, and testing
+- Maintaining a contribution README.md file
 
 ### Challenges Overcome
 
-[What was hard and how you solved it]
+*Challenge 1*: Understanding the issue and its context. Leveraged Claude AI and Meltano SDK documentation to learn more about unfamiliar programming concepts and terminal commands.
+
+*Challenge 2*: Understanding and completing pre-commit checks. Overcame by switching from GitHub Desktop to Windows PowerShell/Git commands, as well as using Claude AI to explain failed checks and find the best solutions to discovered issues.
+
+*Challenge 3:* Low-response codebase maintainers. Utilized bot feedback and Claude AI suggestions to polish my code. Regularly followed up with maintainers via GitHub comments and ensured a properly formatted PR.
 
 ### What I'd Do Differently Next Time
 
-[Reflection on your process]
+- Rely less on AI to write sections in my contribution README.md file
+- Utilize more best practices for open-source contributing, as recommended by my instructors
+- Explore similar merged issues
 
 ---
 
 ## Resources Used
 
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+- [Getting Started with Python in VS Code (Official YouTube Video)](https://youtu.be/D2cwvpJSBX4?si=TIcG7hlLlHRda64z)
+- [Meltano SDK CONTRIBUTING.md](https://github.com/meltano/sdk/blob/main/docs/CONTRIBUTING.md)
+- [Meltano SDK Contributing Guide](https://sdk.meltano.com/en/latest/CONTRIBUTING.html)
+- [Meltano SDK Prerequisites & Setting Up Your Environment](https://docs.meltano.com/contribute/prerequisites/)
+- [Meltano SDK Pull Request Process](https://docs.meltano.com/contribute/merge/)
 
 ---
 
